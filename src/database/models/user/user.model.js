@@ -1,8 +1,7 @@
-// src/database/models/user/user.model.js
 import mongoose from "mongoose";
 import bcrypt from "bcryptjs";
 import crypto from "crypto";
-import { config } from "../../../config/index.js"; // from src/database/models/user -> src/config
+import { config } from "../../../config/index.js";
 
 const userSchema = new mongoose.Schema({
   name: { type: String, required: true, trim: true },
@@ -15,6 +14,15 @@ const userSchema = new mongoose.Schema({
   },
   password: { type: String, required: true, select: false },
   role: { type: String, enum: ["user", "admin"], default: "user" },
+
+  // --- NEW FIELDS START ---
+  gender: { type: String, enum: ["Male", "Female", "Other"] },
+  phoneNumber: { type: String, trim: true },
+  dob: { type: Date },
+  state: { type: String },
+  address: { type: String },
+  // --- NEW FIELDS END ---
+
   createdAt: { type: Date, default: Date.now },
   resetPasswordToken: { type: String, select: false, index: true },
   resetPasswordExpires: { type: Date, select: false },

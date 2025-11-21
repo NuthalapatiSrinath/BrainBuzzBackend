@@ -1,4 +1,3 @@
-// src/modules/currentAffairs/currentAffairs.routes.js
 import express from "express";
 import {
   getCategories,
