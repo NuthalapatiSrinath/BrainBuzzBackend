@@ -1,35 +1,28 @@
-// src/modules/admin/admin.routes.js
 import express from "express";
+import { authenticate } from "../../middleware/auth.js";
 import ensureAdmin from "../../middleware/ensureAdmin.js";
-import { authenticate } from "../../middleware/auth.js"; // your existing
-import * as ctrl from "./admin.controller.js";
+
+// Import Sub-Routers
+import currentAffairsRoutes from "./routes/currentAffairs.admin.routes.js";
+import previousPapersRoutes from "./routes/previousPapers.admin.routes.js";
+
+// Import Common Controller (Media/Subscriptions)
+import * as commonCtrl from "./admin.controller.js";
 
 const router = express.Router();
 
-// protect all admin routes: authenticate -> ensureAdmin
+// Global Security: All admin routes require Auth + Admin Role
 router.use(authenticate, ensureAdmin);
 
-/* categories */
-router.post("/category", ctrl.createCategory);
-router.put("/category/:id", ctrl.updateCategory);
-router.delete("/category/:id", ctrl.deleteCategory);
+// 1. Mount Sub-Modules
+router.use("/current-affairs", currentAffairsRoutes);
+router.use("/previous-papers", previousPapersRoutes);
 
-/* subcategories */
-router.post("/subcategory", ctrl.createSubcategory);
-router.put("/subcategory/:id", ctrl.updateSubcategory);
-router.delete("/subcategory/:id", ctrl.deleteSubcategory);
+// 2. Common Routes (Media & Subscriptions)
+router.post("/media", commonCtrl.createMedia);
+router.get("/media", commonCtrl.listMedia);
+router.delete("/media/:id", commonCtrl.deleteMedia);
 
-/* contentitems (articles/ebooks/testseries entries) */
-router.post("/content", ctrl.createContent);
-router.put("/content/:id", ctrl.updateContent);
-router.delete("/content/:id", ctrl.deleteContent);
-
-/* media */
-router.post("/media", ctrl.createMedia);
-router.get("/media", ctrl.listMedia);
-router.delete("/media/:id", ctrl.deleteMedia);
-
-/* subscriptions */
-router.get("/subscriptions", ctrl.listSubscriptions);
+router.get("/subscriptions", commonCtrl.listSubscriptions);
 
 export default router;

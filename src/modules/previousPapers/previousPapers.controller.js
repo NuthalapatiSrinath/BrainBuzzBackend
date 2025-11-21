@@ -28,46 +28,101 @@ export const getPaperSubcategories = async (req, res) => {
   }
 };
 
-// 3. GET Papers List (Page 3 - Image 3)
+// 3. GET Papers List (Page 3)
 export const getPapersList = async (req, res) => {
   try {
     const { categoryKey, subId } = req.params;
 
-    const papers = await PreviousPaper.find({
+    const filter = { categoryKey, subcategoryId: subId };
+    if (req.query.month) {
+      filter.month = req.query.month;
+    }
+
+    // A. Main List (Includes pdfUrl, title, logo, etc.)
+    const papers = await PreviousPaper.find(filter)
+      .sort({ createdAt: -1 })
+      .lean();
+
+    // B. Recent Papers (For Right Sidebar - Context Aware)
+    // Fetches latest 10 papers specifically for THIS subcategory
+    const recentPapers = await PreviousPaper.find({
       categoryKey,
       subcategoryId: subId,
     })
       .sort({ createdAt: -1 })
+      .limit(10)
+      .select("title logo createdAt month categoryKey subcategoryId")
       .lean();
 
-    return res.json({ success: true, data: papers });
+    return res.json({ success: true, data: { papers, recentPapers } });
   } catch (err) {
     logger.error(`getPapersList error: ${err.message}`);
     return res.status(500).json({ success: false, message: "Server error" });
   }
 };
 
-// 4. GET Single Paper / Track Download (Page 4 - Image 4)
-export const getPaperDetail = async (req, res) => {
+// 4. TRACK DOWNLOAD (Replaces getPaperDetail)
+// Call this when user clicks the PDF link to increment the counter
+export const trackDownload = async (req, res) => {
   try {
     const { paperId } = req.params;
 
-    // Optional: Increment download count
-    const paper = await PreviousPaper.findByIdAndUpdate(
-      paperId,
-      { $inc: { downloadCount: 1 } },
-      { new: true }
-    ).lean();
+    await PreviousPaper.findByIdAndUpdate(paperId, {
+      $inc: { downloadCount: 1 },
+    });
 
-    if (!paper) {
-      return res
-        .status(404)
-        .json({ success: false, message: "Paper not found" });
-    }
-
-    return res.json({ success: true, data: paper });
+    // We don't need to return data, just success
+    return res.json({ success: true, message: "Count updated" });
   } catch (err) {
-    logger.error(`getPaperDetail error: ${err.message}`);
+    logger.error(`trackDownload error: ${err.message}`);
+    // Don't block the UI if tracking fails, just log it
+    return res.status(200).json({ success: false });
+  }
+};
+
+// 5. GET Recent Papers (Global Widget)
+export const getRecentPapers = async (req, res) => {
+  try {
+    const recent = await PreviousPaper.find({})
+      .sort({ createdAt: -1 })
+      .limit(10)
+      .select("title logo createdAt month categoryKey subcategoryId")
+      .lean();
+
+    return res.json({ success: true, data: recent });
+  } catch (err) {
+    logger.error(`getRecentPapers error: ${err.message}`);
+    return res.status(500).json({ success: false, message: "Server error" });
+  }
+};
+
+// 6. GET Paper Archives (Sidebar "Archives" Widget)
+export const getPaperArchives = async (req, res) => {
+  try {
+    const archives = await PreviousPaper.aggregate([
+      {
+        $group: {
+          _id: "$month",
+          count: { $sum: 1 },
+        },
+      },
+      { $sort: { _id: -1 } },
+    ]);
+
+    const formatted = archives.map((a) => ({
+      month: a._id || "Unknown",
+      label: a._id
+        ? new Date(a._id + "-01").toLocaleString("en-US", {
+            month: "long",
+            year: "numeric",
+          })
+        : "Unknown",
+      count: a.count,
+    }));
+
+    return res.json({ success: true, data: formatted });
+  } catch (err) {
+    logger.error(`getPaperArchives error: ${err.message}`);
     return res.status(500).json({ success: false, message: "Server error" });
   }
 };
