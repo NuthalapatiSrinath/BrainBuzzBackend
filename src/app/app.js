@@ -28,7 +28,6 @@ app.use(
 );
 
 app.use(express.json({ limit: "5mb" }));
-app.use(express.urlencoded({ extended: true }));
 
 // Serve images at /images/<file>
 app.use("/images", express.static(path.join(__dirname, "public", "images")));

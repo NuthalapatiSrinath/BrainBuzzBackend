@@ -7,7 +7,7 @@ import { dbConfig } from "./db.config.js";
 export const config = {
   app: {
     ...appConfig,
-    frontendUrl: process.env.FRONTEND_URL || "http://192.168.8.111:3001",
+    frontendUrl: "http://192.168.1.7:3000",
   },
 
   db: dbConfig,
@@ -34,7 +34,7 @@ export const config = {
   security: {
     bcryptSaltRounds: process.env.BCRYPT_SALT_ROUNDS
       ? Number(process.env.BCRYPT_SALT_ROUNDS)
-      : 100,
+      : 10,
 
     rateLimitWindowMs: process.env.RATE_LIMIT_WINDOW_MS
       ? Number(process.env.RATE_LIMIT_WINDOW_MS)

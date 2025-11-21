@@ -2,18 +2,14 @@
 import jwt from "jsonwebtoken";
 import crypto from "crypto";
 import User from "../../database/models/user/user.model.js";
-import { config } from "../../config/index.js"; // <-- FIXED path (from src/modules/auth)
-import sendEmail from "../../utils/email.js"; // <-- relative: src/modules/auth -> src/utils
+import { config } from "../../config/index.js";
+import sendEmail from "../../utils/email.js";
 import { forgotPasswordEmail } from "../../utils/forgotPasswordMailPage.js";
+// IMPORTING YOUR EXISTING JWT UTIL
+import { signAccessToken } from "../../utils/jwt.util.js";
 
-function signJwt(payload) {
-  // use config.jwt.* keys (access token)
-  return jwt.sign(payload, config.jwt.accessSecret, {
-    expiresIn: config.jwt.accessExpires,
-  });
-}
+// REMOVED the local signJwt function
 
-// Register
 // Register
 export const registerController = async (req, res) => {
   try {
@@ -72,16 +68,14 @@ export const loginController = async (req, res) => {
         .status(401)
         .json({ success: false, message: "Invalid credentials" });
 
-    const token = signJwt({ sub: user._id, role: user.role });
+    // USE YOUR signAccessToken util
+    const token = signAccessToken({ sub: user._id, role: user.role });
     return res.status(200).json({ success: true, data: user.toJSON(), token });
   } catch (err) {
     console.error("loginController error:", err);
     return res.status(500).json({ success: false, message: "Server error" });
   }
 };
-
-// (rest of controllers — changePasswordController, forgotPasswordController, resetPasswordController)
-// keep them as you have, but ensure they also import config from "../../config/index.js"
 
 // Change password (authenticated route) - require oldPassword verify
 export const changePasswordController = async (req, res) => {
@@ -116,7 +110,6 @@ export const changePasswordController = async (req, res) => {
 };
 
 // Forgot password (request reset)
-// Forgot password (request reset) - robust version for testing
 export const forgotPasswordController = async (req, res) => {
   try {
     const { email } = req.body;
@@ -143,21 +136,25 @@ export const forgotPasswordController = async (req, res) => {
     const token = user.generatePasswordReset();
     await user.save({ validateBeforeSave: false });
 
-    // For testing: print the plain token to server console (remove in prod)
     console.info(`Password reset token for ${email}: ${token}`);
     console.info(
       `Hashed token saved in DB (resetPasswordToken): ${user.resetPasswordToken}`
     );
 
-    // send email in background — do NOT await (so SMTP errors do not return 500)
+    // send email in background
     setImmediate(async () => {
       try {
-        const resetUrl = `http://192.168.8.111:3001?token=${token}`;
+        // --- FIXED URL ---
+        // Use the frontendUrl from your config file
+        const resetUrl = `${config.app.frontendUrl}/reset-password?token=${token}`;
+
         await sendEmail({
           to: user.email,
           subject: "Password reset",
           text: `Reset your password: ${resetUrl}`,
-          html: forgotPasswordEmail(resetUrl, "Srinath"),
+          // --- FIXED NAME ---
+          // Use the user's name from the database
+          html: forgotPasswordEmail(resetUrl, user.name),
         });
         console.info(`Reset email queued/sent to ${user.email}`);
       } catch (emailErr) {
@@ -170,7 +167,6 @@ export const forgotPasswordController = async (req, res) => {
       message: "If account exists, password reset email will be sent",
     });
   } catch (err) {
-    // log full error to server console for debugging
     console.error("forgotPasswordController error:", err);
     return res.status(500).json({ success: false, message: "Server error" });
   }
