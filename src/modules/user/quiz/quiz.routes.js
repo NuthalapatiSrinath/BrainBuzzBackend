@@ -1,24 +1,20 @@
 import express from "express";
-import {
-  authenticate,
-  optionalAuthenticate,
-} from "../../../middleware/auth.js"; // <-- Import both
+import { optionalAuthenticate } from "../../../middleware/auth.js";
 import * as ctrl from "./quiz.controller.js";
 
 const router = express.Router();
 
-// Public / List
+// --- NEW ROUTE: View All Quizzes (Nested Structure) ---
+router.get("/all", ctrl.getAllQuizCategoriesWithSubs);
+
+// Navigation
 router.get("/categories", ctrl.getQuizCategories);
 router.get("/:categoryKey/subcategories", ctrl.getQuizSubcategories);
 router.get("/:categoryKey/:subId/list", ctrl.getQuizzesList);
-router.get("/:quizId/info", ctrl.getQuizMeta);
 
 // Quiz Flow
-router.get("/:quizId/start", authenticate, ctrl.startQuiz); // Start usually requires login to track start time, but can be optional too if you want. Keeping strict for now.
-
-// --- CHANGED TO OPTIONAL AUTH ---
+router.get("/:quizId/start", ctrl.startQuiz);
 router.post("/:quizId/submit", optionalAuthenticate, ctrl.submitQuiz);
-
-router.get("/:quizId/solutions", authenticate, ctrl.getQuizSolutions);
+router.get("/:quizId/solutions", ctrl.getQuizSolutions);
 
 export default router;

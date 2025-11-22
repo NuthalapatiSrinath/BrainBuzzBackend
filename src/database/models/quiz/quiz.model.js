@@ -1,31 +1,59 @@
 import mongoose from "mongoose";
 
 const questionSchema = new mongoose.Schema({
+  // UI Field: "01" (Question Number)
+  questionNumber: { type: String, required: true },
+
+  // UI Field: "Type and Edit here" (Rich Text HTML)
   questionText: { type: String, required: true },
-  options: [{ type: String }], // ["Option A", "Option B", "Option C", "Option D"]
-  correctOptionIndex: { type: Number, required: true }, // 0, 1, 2, or 3
-  explanation: { type: String }, // Shown in solution view
+
+  // UI Field: "Option 1", "Option 2"...
+  options: [{ type: String }],
+
+  // UI Field: "Answer" (Dropdown index)
+  correctOptionIndex: { type: Number, required: true },
+
+  // UI Field: "Explanation" (Rich Text)
+  explanation: { type: String },
 });
 
 const quizSchema = new mongoose.Schema(
   {
-    title: { type: String, required: true }, // "IAS GS Foundation - Quiz 1"
+    // UI Field: "Quiz Name"
+    title: { type: String, required: true },
 
-    // --- Hierarchy ---
+    // Hierarchy (From previous page selection)
     categoryKey: { type: String, index: true, required: true },
     subcategoryId: { type: String, index: true, required: true },
 
-    // --- Filter Fields ---
-    month: { type: String, index: true }, // "2025-10"
+    // UI Field: "Select Month" (e.g., "January", "February")
+    month: { type: String, index: true },
+
+    // UI Field: "Languages" (e.g., "English")
+    language: { type: String, default: "English", index: true },
+
+    // UI Field: "Set Date" (e.g., "14-02-2025")
     date: { type: Date, default: Date.now },
 
-    // --- Description Page Content (Image 2) ---
-    description: { type: String }, // The main text block
-    participationInfo: { type: String }, // "Why Participate..." text block
+    // UI Field: "No.of.ques" (The number user typed)
+    totalQuestionsCount: { type: Number },
 
-    // --- Config ---
+    // UI Field: "Add Instructions" (Rich Text HTML)
+    description: { type: String },
+
+    // (Optional based on prev images, keep if needed)
+    participationInfo: { type: String },
+
+    // --- Scoring & Config ---
     durationMinutes: { type: Number, default: 10 },
-    totalMarks: { type: Number, default: 10 },
+
+    // UI Field: "Enter Marks" (per question)
+    marksPerQuestion: { type: Number, default: 1 },
+
+    // Calculated automatically
+    totalMarks: { type: Number, default: 0 },
+
+    // UI Field: "Add Question Paper" -> Questions List
     questions: [questionSchema],
 
     isPaid: { type: Boolean, default: false },

@@ -4,8 +4,6 @@ import Quiz from "../../../database/models/quiz/quiz.model.js";
 import QuizResult from "../../../database/models/quiz/quizResult.model.js";
 import logger from "../../../utils/logger.js";
 
-// ... [Keep getQuizCategories, getQuizSubcategories, getQuizzesList, getQuizMeta, startQuiz AS IS] ...
-
 // 1. Get Categories
 export const getQuizCategories = async (req, res) => {
   try {
@@ -33,10 +31,12 @@ export const getQuizSubcategories = async (req, res) => {
 export const getQuizzesList = async (req, res) => {
   try {
     const { categoryKey, subId } = req.params;
-    const { month } = req.query;
+    const { month, lang } = req.query;
 
     const filter = { categoryKey, subcategoryId: subId };
+
     if (month) filter.month = month;
+    if (lang) filter.language = lang;
 
     const quizzes = await Quiz.find(filter)
       .select("-questions -description -participationInfo")
@@ -49,31 +49,7 @@ export const getQuizzesList = async (req, res) => {
   }
 };
 
-// 4. Get Quiz Info
-export const getQuizMeta = async (req, res) => {
-  try {
-    const { quizId } = req.params;
-    const quiz = await Quiz.findById(quizId)
-      .select(
-        "title description participationInfo durationMinutes totalMarks questions.length"
-      )
-      .lean();
-
-    if (!quiz)
-      return res
-        .status(404)
-        .json({ success: false, message: "Quiz not found" });
-
-    const meta = { ...quiz, totalQuestions: quiz.questions.length };
-    delete meta.questions;
-
-    return res.json({ success: true, data: meta });
-  } catch (err) {
-    return res.status(500).json({ success: false, message: "Server error" });
-  }
-};
-
-// 5. Start Quiz
+// 4. Start Quiz (Public)
 export const startQuiz = async (req, res) => {
   try {
     const { quizId } = req.params;
@@ -84,7 +60,7 @@ export const startQuiz = async (req, res) => {
 
     const sanitized = quiz.questions.map((q) => ({
       _id: q._id,
-      questionText: q.questionText,
+      questionText: q.questionText, // Returns HTML string with styles
       options: q.options,
     }));
 
@@ -94,18 +70,20 @@ export const startQuiz = async (req, res) => {
   }
 };
 
-// --- UPDATED SUBMIT LOGIC ---
+// --- 5. Submit Quiz (Updated Scoring) ---
 export const submitQuiz = async (req, res) => {
   try {
     const { quizId } = req.params;
     const { answers, timeTakenSeconds } = req.body;
-    // Check if user exists (from optionalAuthenticate)
     const userId = req.user ? req.user.sub : null;
 
     const quiz = await Quiz.findById(quizId).lean();
     if (!quiz) return res.status(404).json({ success: false });
 
-    // 1. Calculate Score
+    // SCORING LOGIC
+    const pointsPerQ = quiz.marksPerQuestion || 1;
+    const maxPossibleScore = quiz.questions.length * pointsPerQ;
+
     let score = 0;
     let correctCount = 0;
     let wrongCount = 0;
@@ -113,30 +91,30 @@ export const submitQuiz = async (req, res) => {
     answers.forEach((ans) => {
       const q = quiz.questions[ans.questionIndex];
       if (q && q.correctOptionIndex === ans.selectedOption) {
-        score++;
+        score += pointsPerQ; // Add weighted marks
         correctCount++;
       } else {
         wrongCount++;
       }
     });
 
-    const percentage = ((score / quiz.questions.length) * 100).toFixed(0);
+    const percentage =
+      maxPossibleScore > 0 ? ((score / maxPossibleScore) * 100).toFixed(0) : 0;
 
-    // 2. Prepare Base Data (Common for Guest & User)
     const responseData = {
       score,
+      maxScore: maxPossibleScore,
       totalQuestions: quiz.questions.length,
       correctAnswers: correctCount,
       wrongAnswers: wrongCount,
       percentage,
-      rank: null, // Default null
+      rank: null,
       totalParticipants: 0,
       isGuest: !userId,
     };
 
-    // 3. If Authenticated: Save & Rank
+    // If User: Save & Rank
     if (userId) {
-      // Save Result
       await QuizResult.create({
         userId,
         quizId,
@@ -148,7 +126,7 @@ export const submitQuiz = async (req, res) => {
         userResponses: answers,
       });
 
-      // Calculate Rank
+      // Rank Calculation
       const betterScoreCount = await QuizResult.countDocuments({
         quizId,
         score: { $gt: score },
@@ -165,7 +143,6 @@ export const submitQuiz = async (req, res) => {
         quizId,
       });
     } else {
-      // If Guest: Just get participant count for context (optional)
       responseData.totalParticipants = await QuizResult.countDocuments({
         quizId,
       });
@@ -178,12 +155,39 @@ export const submitQuiz = async (req, res) => {
   }
 };
 
-// 7. Get Solutions
+// 6. Solutions
 export const getQuizSolutions = async (req, res) => {
   try {
     const { quizId } = req.params;
     const quiz = await Quiz.findById(quizId).lean();
     return res.json({ success: true, data: quiz });
+  } catch (err) {
+    return res.status(500).json({ success: false, message: "Server error" });
+  }
+};
+
+// 7. Get Directory
+export const getAllQuizCategoriesWithSubs = async (req, res) => {
+  try {
+    const cats = await QuizCategory.find({}).sort({ title: 1 }).lean();
+    const subs = await QuizSubcategory.find({}).sort({ title: 1 }).lean();
+
+    const byCategory = subs.reduce((acc, s) => {
+      (acc[s.categoryKey] = acc[s.categoryKey] || []).push(s);
+      return acc;
+    }, {});
+
+    const result = (cats || []).map((c) => ({
+      ...c,
+      subcategories: (byCategory[c._id] || []).map((s) => ({
+        id: s._id,
+        title: s.title,
+        logo: s.logo,
+        description: s.description,
+      })),
+    }));
+
+    return res.json({ success: true, data: result });
   } catch (err) {
     return res.status(500).json({ success: false, message: "Server error" });
   }

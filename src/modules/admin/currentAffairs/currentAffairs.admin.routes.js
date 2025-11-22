@@ -1,7 +1,7 @@
 import express from "express";
 import ensureAdmin from "../../../middleware/ensureAdmin.js";
 import { authenticate } from "../../../middleware/auth.js";
-import * as ctrl from "../controllers/currentAffairs.admin.controller.js";
+import * as ctrl from "./currentAffairs.admin.controller.js";
 
 const router = express.Router();
 

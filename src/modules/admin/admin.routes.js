@@ -3,9 +3,9 @@ import { authenticate } from "../../middleware/auth.js";
 import ensureAdmin from "../../middleware/ensureAdmin.js";
 
 // Import Sub-Routers
-import currentAffairsRoutes from "./routes/currentAffairs.admin.routes.js";
-import previousPapersRoutes from "./routes/previousPapers.admin.routes.js";
-import quizAdminRoutes from "./routes/quiz.admin.routes.js";
+import currentAffairsRoutes from "./currentAffairs/currentAffairs.admin.routes.js";
+import previousPapersRoutes from "./previousPapers/previousPapers.admin.routes.js";
+import quizAdminRoutes from "./quiz/quiz.admin.routes.js";
 
 // Import Common Controller (Media/Subscriptions)
 import * as commonCtrl from "./admin.controller.js";
