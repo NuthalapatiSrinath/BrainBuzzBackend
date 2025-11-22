@@ -133,10 +133,19 @@ export const createContent = async (req, res) => {
         .json({ success: false, message: "Title required" });
     }
 
-    // 2. Separate Body/ContentUrl from Metadata
+    // 2. Validate Subcategory exists (Safety Check)
+    const subExists = await Subcategory.findOne({ _id: subId, categoryKey });
+    if (!subExists) {
+      return res.status(404).json({
+        success: false,
+        message: "Invalid Category/Subcategory combination",
+      });
+    }
+
+    // 3. Separate Body/ContentUrl from Metadata
     const { body, contentUrl, ...metaData } = payload;
 
-    // 3. Create Article (Metadata) with forced URL params
+    // 4. Create Article (Metadata) with forced URL params
     const article = await Article.create({
       ...metaData,
       categoryKey, // <--- forced
@@ -145,14 +154,21 @@ export const createContent = async (req, res) => {
       updatedAt: new Date(),
     });
 
-    // 4. Create ArticleDetail (Body)
+    // 5. Create ArticleDetail (Body)
     await ArticleDetail.create({
       articleId: article._id,
       body: body || "",
       contentUrl: contentUrl || "",
     });
 
-    return res.status(201).json({ success: true, data: article });
+    // 6. Merge Metadata + Body for Response
+    const fullResponse = {
+      ...article.toObject(),
+      body: body,
+      contentUrl: contentUrl,
+    };
+
+    return res.status(201).json({ success: true, data: fullResponse });
   } catch (err) {
     logger.error(`createContent error: ${err.message}`);
     return res.status(500).json({ success: false, message: "Server error" });
@@ -166,6 +182,7 @@ export const updateContent = async (req, res) => {
 
     const { body, contentUrl, ...metaData } = payload;
 
+    // 1. Update Metadata
     const article = await Article.findByIdAndUpdate(
       id,
       { ...metaData, updatedAt: new Date() },
@@ -177,13 +194,21 @@ export const updateContent = async (req, res) => {
         .status(404)
         .json({ success: false, message: "Article not found" });
 
-    await ArticleDetail.findOneAndUpdate(
+    // 2. Update Body (upsert=true creates it if missing)
+    const detail = await ArticleDetail.findOneAndUpdate(
       { articleId: id },
       { body, contentUrl },
       { upsert: true, new: true }
     );
 
-    return res.json({ success: true, data: article });
+    // 3. Merge Metadata + Body for Response
+    const fullResponse = {
+      ...article.toObject(),
+      body: detail.body,
+      contentUrl: detail.contentUrl,
+    };
+
+    return res.json({ success: true, data: fullResponse });
   } catch (err) {
     logger.error(`updateContent error: ${err.message}`);
     return res.status(500).json({ success: false, message: "Server error" });
@@ -193,6 +218,7 @@ export const updateContent = async (req, res) => {
 export const deleteContent = async (req, res) => {
   try {
     const id = req.params.id;
+    // Delete both parts
     const article = await Article.findByIdAndDelete(id);
     await ArticleDetail.findOneAndDelete({ articleId: id });
 

@@ -1,24 +1,30 @@
 import mongoose from "mongoose";
 
-// This model is for LISTING (Home page, Category page, Sidebar)
-// It does NOT contain the heavy 'body' text.
 const articleSchema = new mongoose.Schema(
   {
-    _id: { type: String }, // We keep your existing ID logic
+    // FIX: Add a default generator so Mongoose creates an ID automatically
+    _id: {
+      type: String,
+      default: () => new mongoose.Types.ObjectId().toString(),
+    },
+
     title: { type: String, required: true },
-    excerpt: { type: String }, // Short summary for cards
+    excerpt: { type: String },
 
     date: { type: Date, index: true },
-    month: { type: String, index: true }, // YYYY-MM
-    scope: { type: String }, // International, Sports, etc.
+    month: { type: String, index: true },
+    scope: { type: String },
 
-    image: { type: String }, // Thumbnail/Cover image
+    image: { type: String },
 
-    categoryKey: { type: String, index: true }, // e.g. "upsc"
-    subcategoryId: { type: String, index: true }, // e.g. "upsc_ias"
+    categoryKey: { type: String, index: true },
+    subcategoryId: { type: String, index: true },
 
-    language: { type: String, default: "en", index: true }, // "en"/"hi"/"te"
+    language: { type: String, default: "en", index: true },
     author: { type: String },
+
+    // Note: 'isPaid' was missing in your previous schema. Added it here if you need it.
+    isPaid: { type: Boolean, default: false },
 
     createdAt: { type: Date, default: Date.now },
     updatedAt: { type: Date, default: Date.now },

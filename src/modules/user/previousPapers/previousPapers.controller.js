@@ -1,7 +1,7 @@
-import PaperCategory from "../../database/models/previousPapers/paperCategory.model.js";
-import PaperSubcategory from "../../database/models/previousPapers/paperSubcategory.model.js";
-import PreviousPaper from "../../database/models/previousPapers/previousPaper.model.js";
-import logger from "../../utils/logger.js";
+import PaperCategory from "../../../database/models/previousPapers/paperCategory.model.js";
+import PaperSubcategory from "../../../database/models/previousPapers/paperSubcategory.model.js";
+import PreviousPaper from "../../../database/models/previousPapers/previousPaper.model.js";
+import logger from "../../../utils/logger.js";
 
 // 1. GET Categories (Page 1)
 export const getPaperCategories = async (req, res) => {

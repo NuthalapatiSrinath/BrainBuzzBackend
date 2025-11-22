@@ -5,6 +5,7 @@ import ensureAdmin from "../../middleware/ensureAdmin.js";
 // Import Sub-Routers
 import currentAffairsRoutes from "./routes/currentAffairs.admin.routes.js";
 import previousPapersRoutes from "./routes/previousPapers.admin.routes.js";
+import quizAdminRoutes from "./routes/quiz.admin.routes.js";
 
 // Import Common Controller (Media/Subscriptions)
 import * as commonCtrl from "./admin.controller.js";
@@ -17,6 +18,7 @@ router.use(authenticate, ensureAdmin);
 // 1. Mount Sub-Modules
 router.use("/current-affairs", currentAffairsRoutes);
 router.use("/previous-papers", previousPapersRoutes);
+router.use("/quiz", quizAdminRoutes);
 
 // 2. Common Routes (Media & Subscriptions)
 router.post("/media", commonCtrl.createMedia);

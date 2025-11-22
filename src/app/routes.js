@@ -1,11 +1,11 @@
 // src/app/routes.js
 import express from "express";
 import authRoutes from "../modules/auth/auth.routes.js";
-import currentAffairsRoutes from "../modules/currentAffairs/currentAffairs.routes.js";
+import currentAffairsRoutes from "../modules/user/currentAffairs/currentAffairs.routes.js";
 import adminRoutes from "../modules/admin/admin.routes.js";
 // Import the new module
-import previousPapersRoutes from "../modules/previousPapers/previousPapers.routes.js";
-
+import previousPapersRoutes from "../modules/user/previousPapers/previousPapers.routes.js";
+import quizRoutes from "../modules/user/quiz/quiz.routes.js";
 const router = express.Router();
 
 // health check
@@ -19,6 +19,8 @@ router.use("/currentaffairs", currentAffairsRoutes);
 
 // Previous Question Papers (NEW)
 router.use("/previouspapers", previousPapersRoutes);
+
+router.use("/quiz", quizRoutes);
 
 // Admin
 router.use("/admin", adminRoutes);

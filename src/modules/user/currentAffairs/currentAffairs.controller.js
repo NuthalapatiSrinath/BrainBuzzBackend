@@ -1,9 +1,9 @@
-import Category from "../../database/models/currentAffairs/category.model.js";
-import Subcategory from "../../database/models/currentAffairs/subcategory.model.js";
+import Category from "../../../database/models/currentAffairs/category.model.js";
+import Subcategory from "../../../database/models/currentAffairs/subcategory.model.js";
 // UPDATED MODELS
-import Article from "../../database/models/currentAffairs/article.model.js";
-import ArticleDetail from "../../database/models/currentAffairs/articleDetail.model.js";
-import logger from "../../utils/logger.js";
+import Article from "../../../database/models/currentAffairs/article.model.js";
+import ArticleDetail from "../../../database/models/currentAffairs/articleDetail.model.js";
+import logger from "../../../utils/logger.js";
 
 /**
  * Utility: determine language from request
